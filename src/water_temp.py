@@ -120,7 +120,6 @@ def fetch_all_station_data():
                 'lake': info['lake'],
                 'temperature': temp,
                 'time': result['latest_time'],
-                'color': get_color_for_temp(temp),
                 'all_readings': result['all_readings'],  # Include full 7-day data
                 'reading_count': result['count']
             })
