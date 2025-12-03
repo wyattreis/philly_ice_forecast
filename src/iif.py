@@ -13,7 +13,7 @@ from pathlib import Path
 # Ensure project root is on sys.path so `external.hff` can be imported as a package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from water_temp import fetch_all_station_data
+from water_temp import fetch_all_station_data, get_station_water_temp_for_hff
 from weather_forecast import get_forecast, get_current_conditions, LOCATION
 from hff_utils import (
     get_elevation, get_48h_hourly_forecast, get_full_forecast,
@@ -314,12 +314,15 @@ st.write('Forecast met input data from NOAA Hourly Tabular Forecast Data. Heat F
 # Heat flux calculation inputs
 col1, col2, col3, col4 = st.columns(4)
 
+# Get water temperature from stations
+water_temp_c, water_temp_source = get_station_water_temp_for_hff()
+
 with col1:
     hf_lat = st.number_input('Heat Flux Latitude', value=float(LOCATION.get('lat', 41.1242)), format="%.6f", step=0.000001, key='hf_lat')
 with col2:
     hf_lon = st.number_input('Heat Flux Longitude', value=float(LOCATION.get('lon', -101.3644337)), format="%.6f", step=0.000001, key='hf_lon')
 with col3:
-    T_water_C = st.number_input('Water Temperature (°C)', value=2.0, key='T_water')
+    T_water_C = st.number_input('Water Temperature (°C)', value=water_temp_c, key='T_water')
 with col4:
     D = st.number_input('Characteristic Depth (m)', value=2.0, key='depth')
 
@@ -331,6 +334,8 @@ if is_default:
     st.markdown(f"**Active Location:** {LOCATION.get('name', 'Default')} — `{hf_lat:.6f}, {hf_lon:.6f}`")
 else:
     st.markdown(f"**Active Location (override):** `{hf_lat:.6f}, {hf_lon:.6f}` — default: {LOCATION.get('name', 'Default')} `{default_loc_lat:.6f}, {default_loc_lon:.6f}`")
+
+st.markdown(f"**Water Temperature Source:** {water_temp_source}")
 
 if st.button('🌡️ Compute Heat Fluxes'):
     try:

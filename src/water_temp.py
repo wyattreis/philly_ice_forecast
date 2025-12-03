@@ -152,6 +152,44 @@ def fetch_all_station_data():
             })
     
     return station_data
+
+
+def get_station_water_temp_for_hff():
+    """
+    Get water temperature for heat flux forecast from available stations.
+    
+    Priority order:
+    1. Little Rapids, MI
+    2. S.W. Pier, MI
+    3. De Tour Village, MI
+    4. Mackinaw City, MI
+    5. If no data available, use 2°C
+    
+    Returns:
+    - Tuple: (temperature_C, source_name)
+      temperature_C: Water temperature in Celsius
+      source_name: Name of the station or "Default" if using fallback
+    """
+    priority_stations = [
+        'Little Rapids, MI',
+        'S.W. Pier, MI',
+        'De Tour Village, MI',
+        'Mackinaw City, MI'
+    ]
+    
+    for station_name in priority_stations:
+        if station_name in STATIONS_DATA:
+            station_info = STATIONS_DATA[station_name]
+            result = get_water_temperature(station_info['id'])
+            
+            if result['status'] == 'success':
+                # Convert from Fahrenheit to Celsius
+                temp_f = result['latest_temp']
+                temp_c = (temp_f - 32) * (5 / 9)
+                return temp_c, station_name
+    
+    # If no station data available, use default
+    return 2.0, "Default"
     
 
 if __name__ == "__main__":
