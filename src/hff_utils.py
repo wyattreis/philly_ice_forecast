@@ -1,7 +1,25 @@
 # Wrapper utilities for heat-flux functions that default to the app LOCATION
 # This module delegates to the original implementations in external.hff.utils
 
-from external.hff import utils as eh_utils
+try:
+    # Try the standard package import first
+    from external.hff import utils as eh_utils
+except Exception:
+    # Fallback: load the utils.py directly by file path (handles deploy environments
+    # where the package import path isn't configured).
+    import importlib.util
+    from pathlib import Path
+
+    utils_path = Path(__file__).resolve().parent.parent / 'external' / 'hff' / 'utils.py'
+    if utils_path.exists():
+        spec = importlib.util.spec_from_file_location('external_hff_utils', str(utils_path))
+        eh_utils = importlib.util.module_from_spec(spec)
+        loader = spec.loader
+        if loader is None:
+            raise ImportError(f"Could not load module from {utils_path}")
+        loader.exec_module(eh_utils)
+    else:
+        raise ImportError(f"Could not locate external.hff.utils at {utils_path}")
 
 # Try to lazily import weather_forecast only when needed to avoid circular import
 
