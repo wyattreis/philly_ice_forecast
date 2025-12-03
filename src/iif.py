@@ -149,10 +149,15 @@ if forecast_data and forecast_data['status'] == 'success':
 
                     html += "</p>"
 
-                    st.markdown(html, unsafe_allow_html=True)
+                    # Include the detailed forecast inside the card using a native HTML
+                    # <details> element so it appears above the bottom border line.
+                    detailed_text = period.get('detailedForecast', '') or ''
+                    # sanitize newlines for HTML display
+                    detailed_html = detailed_text.replace('\n', '<br/>')
 
-                    with st.expander("Detailed Forecast"):
-                        st.write(period.get('detailedForecast', ''))
+                    html += f"<div style='margin-top:6px;'><details><summary style='cursor:pointer;font-weight:600;'>Detailed Forecast</summary><div style='margin-top:6px;color:#333;'>{detailed_html}</div></details></div></div>"
+
+                    st.markdown(html, unsafe_allow_html=True)
     
     st.caption(f"Forecast updated: {forecast_data.get('updated', 'N/A')}")
     
