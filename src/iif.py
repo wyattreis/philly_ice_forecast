@@ -172,18 +172,56 @@ st.header("🌊 Station Water Temperature")
 if len(df) > 0:
     # Station status summary
     from water_temp import STATIONS_DATA
-    
+
     # Get list of active station IDs
     active_station_ids = set(df['station_id'].tolist())
-    
-    # Build status line
+
+    # Determine USACE Hydro Plant status based on CSV age
+    usace_status_symbol = "❌"
+    try:
+        usace_csv = Path(__file__).parent.parent / 'USACEhydro_WT_daily.csv'
+        if usace_csv.exists():
+            usace_df_tmp = pd.read_csv(usace_csv)
+            if 'date' in usace_df_tmp.columns:
+                usace_df_tmp['date'] = pd.to_datetime(usace_df_tmp['date'], errors='coerce')
+                usace_df_tmp = usace_df_tmp.dropna(subset=['date'])
+                if not usace_df_tmp.empty:
+                    latest_date = usace_df_tmp['date'].max()
+                    days_old = (pd.Timestamp.now() - pd.to_datetime(latest_date)).days
+                    if days_old <= 2:
+                        usace_status_symbol = '✅'
+                    elif days_old <= 5:
+                        usace_status_symbol = '❓'
+                    else:
+                        usace_status_symbol = '❌'
+    except Exception:
+        usace_status_symbol = '❌'
+
+    # Build status line with USACE as the third source after Little Rapids and S.W. Pier
+    preferred_order = ['Little Rapids, MI', 'S.W. Pier, MI']
     status_parts = []
-    for location, info in STATIONS_DATA.items():
-        if info['id'] in active_station_ids:
+
+    # Add preferred stations in specified order
+    for location in preferred_order:
+        info = STATIONS_DATA.get(location)
+        if info and info.get('id') in active_station_ids:
             status_parts.append(f"✅ {location}")
         else:
             status_parts.append(f"❌ {location}")
-    
+
+    # Insert USACE Hydro Plant status
+    status_parts.append(f"{usace_status_symbol} USACE Hydro Plant")
+
+    # Add any remaining stations from STATIONS_DATA (preserve their existing order)
+    for location, info in STATIONS_DATA.items():
+        if location in preferred_order:
+            continue
+        # skip if we already inserted USACE (it's not in STATIONS_DATA)
+        if info.get('id') in active_station_ids:
+            status_parts.append(f"✅ {location}")
+        else:
+            status_parts.append(f"❌ {location}")
+
     # Display station status
     st.markdown("**Station Status:** " + " | ".join(status_parts))
     
@@ -213,7 +251,7 @@ if len(df) > 0:
                         time_str = pd.to_datetime(latest['date']).strftime('%Y-%m-%d')
                         usace_row = {
                             'location': 'USACE Hydro Plant',
-                            'lake': 'Hydro Plant',
+                            'lake': 'Hydro Plant Approach',
                             'temperature': temp_f,
                             'time': time_str,
                             'temperature_C': temp_c
@@ -421,9 +459,19 @@ except Exception:
 station_temp_c, station_source = get_station_water_temp_for_hff()
 
 # Choose default and source label
-if usace_temp_c is not None:
+# Only use USACE temp if it's within the last 2 days; otherwise fall back to station/default
+usace_used = False
+try:
+    if usace_temp_c is not None and usace_temp_date is not None:
+        now = pd.Timestamp.now()
+        if now - pd.to_datetime(usace_temp_date) <= pd.Timedelta(days=2):
+            usace_used = True
+except Exception:
+    usace_used = False
+
+if usace_used:
     default_water_temp = usace_temp_c
-    water_temp_source_label = f"USACE Hydro Plant ({usace_temp_date.strftime('%Y-%m-%d')})"
+    water_temp_source_label = f"USACE Hydro Plant ({pd.to_datetime(usace_temp_date).strftime('%Y-%m-%d')})"
 elif station_source != 'Default':
     default_water_temp = station_temp_c
     water_temp_source_label = station_source
