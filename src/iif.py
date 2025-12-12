@@ -197,6 +197,33 @@ if len(df) > 0:
     # Compute Celsius
     display_df['temperature_C'] = (display_df['temperature'] - 32) * (5 / 9)
 
+    # Append latest USACE hydro plant reading to the table (if CSV present)
+    try:
+        usace_csv = Path(__file__).parent.parent / 'USACEhydro_WT_daily.csv'
+        if usace_csv.exists():
+            usace_df = pd.read_csv(usace_csv)
+            if 'date' in usace_df.columns and 'temp_dy' in usace_df.columns:
+                usace_df['date'] = pd.to_datetime(usace_df['date'], errors='coerce')
+                usace_df = usace_df.dropna(subset=['date'])
+                if not usace_df.empty:
+                    latest = usace_df.loc[usace_df['date'].idxmax()]
+                    try:
+                        temp_f = float(latest['temp_dy'])
+                        temp_c = (temp_f - 32) * (5.0 / 9.0)
+                        time_str = pd.to_datetime(latest['date']).strftime('%Y-%m-%d')
+                        usace_row = {
+                            'location': 'USACE Hydro Plant',
+                            'lake': 'Hydro Plant',
+                            'temperature': temp_f,
+                            'time': time_str,
+                            'temperature_C': temp_c
+                        }
+                        display_df = pd.concat([display_df, pd.DataFrame([usace_row])], ignore_index=True)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
     # Format strings for display
     display_df['Temperature (°F)'] = display_df['temperature'].apply(lambda x: f"{x:.1f}°F" if pd.notna(x) else "N/A")
     display_df['Temperature (°C)'] = display_df['temperature_C'].apply(lambda x: f"{x:.1f}°C" if pd.notna(x) else "N/A")
@@ -354,7 +381,7 @@ if len(df) > 0:
 #                 st.metric("Avg", f"{temps.mean():.1f}°C")
 #             with col4:
 #                 st.metric("Readings", len(temps))
-    st.caption("Data source: NOAA CO-OPS API | Updates every hour")
+    st.caption("Data sources: NOAA CO-OPS API - Updates every hour | USACE Hydro Plant CSV - Manual updates ~daily")
     
 else:
     st.error("⚠️ No temperature data available at this time. Please try again later.")
