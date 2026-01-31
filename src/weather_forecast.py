@@ -1,18 +1,37 @@
 """
 weather_forecast.py
-Fetches weather forecast data from the National Weather Service API for Sault Sainte Marie, MI
+Fetches weather forecast data from the National Weather Service API
 """
 
 import requests
 from datetime import datetime
 
 
-# Location details for Sault Sainte Marie, MI
+# Default location details for Sault Sainte Marie, MI
 LOCATION = {
     'name': 'Sault Sainte Marie, MI',
     'lat': 46.5033,
     'lon': -84.3517,
     'elevation_ft': 597
+}
+
+# Predefined locations
+PREDEFINED_LOCATIONS = {
+    'Philadelphia, PA - Baxter Water Intake': {
+        'lat': 40.039661,
+        'lon': -74.992145,
+        'elev': 5
+    },
+    'Philadelphia, PA - Schuylkill Rv. Near 30th St': {
+        'lat': 39.955093,
+        'lon': -75.180347,
+        'elev': 5
+    },
+    'Trenton, NJ - Calhoun St Bridge': {
+        'lat': 40.221788,
+        'lon': -74.779903,
+        'elev': 10
+    }
 }
 
 
